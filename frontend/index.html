@@ -1,0 +1,352 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>ScottTheBot Developer Window</title>
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <link rel="stylesheet" type="text/css" href="font-awesome-4.7.0/css/font-awesome.css">
+    <!-- from https://stackoverflow.com/questions/32621988/electron-jquery-is-not-defined -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+    <script src="jquery-3.2.1.min.js"></script>
+    <script>if (window.module) module = window.module;</script>
+    <style>
+      #title-block{
+        background: #363377;
+        color: white;
+        font-size: 25px;
+        font-weight: bold;
+        position: fixed;
+        top: 0;
+        left: 75px;
+        width: 715px;
+        height: 35px;
+        padding-top: 60px;
+        padding-right: 10px;
+        border-bottom: 10px solid #AA7C39;
+        text-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        text-align: right;
+      }
+      #title-block strong{
+        font-size: 1.2em;
+      }
+      #some-other-block{
+        background: #1D1959;
+        color: white;
+        font-size: 50px;
+        padding-top: 35px;
+        padding-left: 12px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 64px;
+        height: 60px;
+        border-bottom: 10px solid #AA7C39;
+      }
+      #box-shadow-inset{
+        top: -10%;
+        left: -10%;
+        width: 120%;
+        height: 95px;
+        box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.5);
+      }
+      body{
+        -webkit-app-region: drag;
+        background: #2A4D6E;
+        font-family: quattrocento_sansregular, sans-serif;
+        font-size: 15px;
+        overflow: hidden;
+      }
+      .block{
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        background: #267257;
+        color: white;
+        padding: 8px;
+        width: 28%;
+        float: left;
+        margin: 10px;
+        clear: none;
+        height: 200px;
+      }
+      .block-title{
+        color: white;
+        font-family: quattrocento_sansbold;
+        font-size: 1.5em;
+        text-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
+        padding-bottom: 3px;
+      }
+      #disconnected{
+        background: red !important;
+        opacity: 0;
+        transition: all 1s;
+      }
+      #log-inner{
+        background: white;
+        color: black;
+        height: 150px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        font-family: monospace;
+      }
+      #users-inner .user, #guilds-inner .guild{
+        padding: 5px;
+        font-family: quattrocento_sansregular, sans-serif;
+      }
+      #users-inner .user .user-name, #guilds-inner .guild .guild-name{
+        font-family: quattrocento_sansbold;
+      }
+      #users-inner .user:nth-child(even), #guilds-inner .guild:nth-child(even){
+        background: #478E75;
+      }
+      #users-inner .user:nth-child(odd), #guilds-inner .guild:nth-child(odd){
+        background: #0E563D;
+      }
+      strong{
+        font-family: quattrocento_sansbold;
+      }
+      .user-id, .guild-id{
+        display: none;
+      }
+      .user-block, .guild-block{
+        color: red;
+        font-family: quattrocento_sansbold;
+      }
+      .block-dat-boi-lol, .leave-dat-boi-lol{
+        cursor: pointer;
+        text-decoration: none;
+        color: red;
+        font-family: quattrocento_sansbold;
+      }
+      #users-inner, #guilds-inner{
+        overflow-x: hidden;
+        overflow-y: scroll;
+        height: 150px;
+      }
+      #you-beaned{
+        text-align: center;
+        font-size: 3em;
+        color: white;
+        font-family: quattrocento_sansbold;
+        top: 45%;
+        left: 20%;
+        position: fixed;
+        text-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
+        display: none;
+      }
+    </style>
+    <script type="text/javascript">
+      var uptime = null;
+    </script>
+  </head>
+  <body>
+    <div id='title-block'><strong>ScottTheBot</strong> <span class="bugfix-span">by Scott</span></div>
+    <div id='some-other-block'><i class="fa fa-paper-plane"></i></div>
+    <div id="you-beaned">You've been disconnected.</div>
+    <div id='box-shadow-inset'></div>
+    <br>
+    <div id='log' class='block'>
+      <div class='block-title'><i class="fa fa-info"></i> Log</div>
+      <div id='log-inner'>
+        <div class="log" style="color: green">App Ready</div>
+        <div class="log">ScottTheBot</div>
+        <div class="log">Base Code by Scott#4276</div>
+        <div class="log" style="color: red">Please don't change the credit as I spent a long time on this code!</div>
+      </div>
+    </div>
+    <div id='stats' class='block'>
+      <div class='block-title'><i class="fa fa-reorder"></i> Statistics</div>
+      <div id='number-of-servers'>Loading...</div>
+      <div id='number-of-users'>Loading...</div>
+      <div id='uptime'>Loading...</div>
+      <br>
+      <div class='block-title'><i class="fa fa-drivers-license-o"></i> Version Info</div>
+      <div id='electron-version'></div>
+      <div id='node-version'></div>
+      <div id='v8-version'></div>
+      <div id='chromium-version'></div>
+    </div>
+    <div id='users' class='block'>
+      <div class='block-title'><i class="fa fa-users"></i> Users</div>
+      <div id='users-inner'>
+      </div>
+    </div>
+    <div id='console' class='block'>
+      <div class='block-title'><i class="fa fa-code"></i> Console</div>
+      <input id='eval'> <button onclick="evalExpression()">Run</button>
+      <br><br>
+      <div class='block-title'><i class="fa fa-user"></i> User Lookup</div>
+      <input id='user-lookup'> <button onclick="lookupUser()">Search</button>
+    </div>
+    <div class="block">
+      <div class='block-title'><i class="fa fa-wrench"></i> App Settings</div>
+      <div id="theme-select">Theme
+      <select id="theme">
+        <option value="1">Original</option>
+        <option value="2">Dark</option>
+        <option value="3">Light</option>
+      </select>
+    </div>
+    <div id="scott-version">
+      ScottTheBot v2(alpha)
+    </div>
+  </div>
+    <div class="block">
+      <div class='block-title'><i class="fa fa-shield"></i> Guilds</div>
+      <div id='guilds-inner'>
+      </div>
+    </div>
+    <script type="text/javascript">
+    const {ipcRenderer, dialog, shell, app} = require('electron');
+
+    //versioning
+    $('#electron-version').html("<strong>Electron Version</strong> " + process.versions.electron)
+    $('#node-version').html("<strong>Node Version</strong> " + process.versions.node)
+    $('#v8-version').html("<strong>V8 Version</strong> " + process.versions.v8)
+    $('#chromium-version').html("<strong>Chromium Version</strong> " + process.versions.chrome)
+
+
+
+      function blockUser(node){
+        var identification_code = node.parentNode.parentNode.children.item(2).innerHTML;
+        console.log(identification_code)
+        ipcRenderer.send('user-block', {id: identification_code, node, type: node.innerHTML});
+      }
+
+      ipcRenderer.on('user-block-selection', function (event, index) {
+        if (index.index === 0){
+
+          ipcRenderer.send('user-block-confirmed', index.id)
+        }else if(index.index === 2){
+          shell.openExternal('http://electron.atom.io')
+        }
+      })
+    </script>
+    <script type="text/javascript">
+
+      var moment = require('moment')
+
+      var qat = window.setInterval(function(){
+        ipcRenderer.send('statistics-send', '0x02332')
+        window.clearInterval(qat)
+      }, 3000)
+
+      ipcRenderer.on('statistics-response', (event, arg) => {
+        let data = JSON.parse(arg);
+        document.getElementById('number-of-servers').innerHTML = "<strong>" + data.guilds + "</strong> Guilds";
+        document.getElementById('number-of-users').innerHTML   = "<strong>" + data.users  + "</strong> Users";
+        uptime = moment();
+        window.setInterval(function(){
+          var now = moment.duration(moment().diff(uptime))
+          var ret = now.humanize();
+          document.getElementById('uptime').innerHTML = "Online for <strong>" + ret + "</strong>";
+        }, 1000)
+      })
+
+      ipcRenderer.on('client-users-stringified', (event, arg) => {
+        var users = JSON.parse(arg);
+        var usersDiv = $("#users-inner")
+        for(var i = 0; i < users.length; i++){
+          var user = users[i];
+          var userDiv = $("<div>");
+          userDiv.addClass("user");
+          userDiv.html(`<div class="user-inner">
+            <span class="user-name">${user.username}</span><span class="user-discrim">#${user.discriminator}</span>
+            <span class="user-id">${user.id}</span>
+            <span class="user-block"><a class="block-dat-boi-lol" onclick="blockUser(this)">(block)</a></span>
+          </div>`)
+          usersDiv.append(userDiv)
+        }
+      })
+
+      ipcRenderer.on('client-guilds-stringified', (event, arg) => {
+        var guilds = JSON.parse(arg);
+        var guildsDiv = $("#guilds-inner")
+        for(var i = 0; i < guilds.length; i++){
+          var guild = guilds[i];
+          var guildDiv = $("<div>");
+          guildDiv.addClass("guild");
+          guildDiv.html(`<div class="guild-inner">
+            <span class="guild-name">${guild.name}</span>
+            <span class="guild-id">${guild.id}</span>
+            <span class="guild-leave"><a class="leave-dat-boi-lol" onclick="leaveGuild(this)">(leave)</a></span>
+          </div>`)
+          guildsDiv.append(guildDiv)
+        }
+      })
+
+      ipcRenderer.on('disconnected', (event, arg) => {
+        console.log('yes')
+        $(".block").fadeOut();
+        $(".fa").fadeOut();
+        $("strong").fadeOut();
+        $("#you-beaned").fadeIn();
+        $(".bugfix-span").fadeOut();
+        $("#title-block").animate({
+          height: 530,
+          marginRight: -130
+        }, 1000)
+        $("#some-other-block").animate({
+          height: 555
+        }, 1000)
+      })
+
+      /**
+      * @param type [Number]
+      * 1: 'Found Command'
+      * 2: 'Wrote to File'
+      * 3: 'Error' (see second parameter)
+      * 4: 'NSFW Command'
+      * 5: 'Executed Command'
+      * 6: 'Censored Word'
+      * default: 'Ready'
+
+      * @param err [String]
+      * Custom error string if logging an error.
+      */
+      ipcRenderer.on('okay-no', (event, arg) => {
+        console.log('this happened lol')
+        $("*").css("color", "pink")
+      })
+      ipcRenderer.on('log', (event, arg) => {
+        console.log(arg)
+        var logDiv = $("#log-inner");
+        var code = "";
+        var color = "";
+        switch(arg){
+          case 1: code = 'Received Command'; color = '#00ffe8'; break;
+          case 2: code = 'Wrote to File'; color = '#6900ff'; break;
+          case 3: code = 'Error'; color = 'red'; break;
+          case 4: code = 'NSFW Command Run'; color = '#f40000'; break;
+          case 5: code = 'Executed Command'; color = '#90f400'; break;
+          case 6: code = 'Censored Word'; color = '#f00000'; break;
+          default: code = 'Bot Ready'; color = '#555'; break;
+        }
+        $("<div>").addClass('log').html(code).css('color', color).appendTo(logDiv)
+        $("#log-inner").animate({ scrollTop: $('#log-inner').prop("scrollHeight")}, 1000);
+      })
+    </script>
+    <script name="internal">
+      $("#theme").change(() => {
+        var val = $("#theme").val();
+        console.log(val, 'hi')
+        switch(val*1){
+          case 1: {
+          } break;
+          case 2: {
+            $("#title-block").css('background', '#444444')
+            $("#some-other-block").css('background', '#222222')
+            $("#title-block").css('border-bottom', '10px solid #000')
+            $("#some-other-block").css('border-bottom', '10px solid #000')
+            $("body").css('background', '#545454')
+            $(".block").css('background', '#333')
+            $(".user:nth-child(odd)").css('background', '#111')
+            $(".user:nth-child(even)").css('background', '#222')
+            $(".guild:nth-child(odd)").css('background', '#111')
+            $(".guild:nth-child(even)").css('background', '#222')
+          } break;
+          case 3: {
+
+          } break;
+        }
+      })
+    </script>
+  </body>
+</html>

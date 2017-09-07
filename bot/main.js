@@ -1,12 +1,96 @@
 // init
+var ready = false;
 var Discord = require('discord.js');
-var colors = require('colors');
 var fs = require('fs');
-
-// functions
+const {app, BrowserWindow, dialog, Menu, MenuItem} = require('electron')
+const path = require('path')
+const url = require('url')
+const ipc = require('electron').ipcMain
+var win, disconnected = false;
 var Scott = new Discord.Client();
-var embed = function(cba){ return (new Discord.RichEmbed()).setFooter('Called by ' + cba.username, cba.avatarURL); };
+const cmenu = new Menu()
+cmenu.append(new MenuItem({ label: 'ScottTheBot v2.1' }))
+cmenu.append(new MenuItem({ type: 'separator' }))
+cmenu.append(new MenuItem({ label: 'Responsive', type: 'checkbox', checked: true }))
+cmenu.append(new MenuItem({ label: 'Use Global Blocks', type: 'checkbox', checked: true}))
+let messageCounter = 0;
+/**
+* @param type [Number]
+* 1: 'Found Command'
+* 2: 'Wrote to File'
+* 3: 'Error' (see second parameter)
+* 4: 'NSFW Command'
+* 5: 'Executed Command'
+* 6: 'Censored Word'
+* default: 'Ready'
 
+* @param err [String]
+* Custom error string if logging an error.
+*/
+var log = function(type, err){
+  win.webContents.send('log', type)
+};
+// electron init
+var openWindow = () => {
+  // Create the browser window.
+  win = new BrowserWindow({width: 800, height: 600, titleBarStyle: 'hiddenInset'})
+  // and load the index.html of the app.
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, '../frontend/index.html'),
+    protocol: 'file:',
+    slashes: true
+  }))
+  win.on('dom-ready', function(){
+    log(99)
+  })
+  // Emitted when the window is closed.
+  win.on('closed', () => {
+    // Dereference the window object, usually you would store windows
+    // in an array if your app supports multi windows, this is the time
+    // when you should delete the corresponding element.
+    win = null
+  })
+
+};
+
+Scott.login('MzQxNDA3Mjg0MzY4NTA2ODgy.DJBcRQ.nMB5RGHhthwxE_PiouAuMflJ57E')
+  .catch((e) => {
+    disconnected = true;
+    setInterval(function(){
+      win.webContents.send("disconnected", "disconnected")
+      clearInterval(this)
+    }, 5000)
+  })
+
+app.on('ready', ()=>{
+  openWindow();
+  ready = true;
+})
+
+// Quit when all windows are closed.
+app.on('window-all-closed', () => {
+  // On macOS it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  // On macOS it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (win === null) {
+    openWindow()
+  }
+})
+
+app.on('browser-window-created', function (event, win) {
+  win.webContents.on('context-menu', function (e, params) {
+    cmenu.popup(win, params.x, params.y)
+  })
+})
+
+var embed = function(cba){ return (new Discord.RichEmbed()).setFooter('Called by ' + cba.username, cba.avatarURL); };
 
 var games = [
     'Something Scotty',
@@ -23,8 +107,21 @@ var badWordResponses = [
     'get a real vocabulary.',
     'you do know there are better places to say that?',
     'really?',
-    'you\'re really a poopie head.'
+    'you\'re really a poopie head.',
+    '***why***???',
+    'go away.'
 ];
+/*
+$user$ is the username
+$type$ is "kicked"/"banned"
+*/
+var kickBanResponses = [
+  'Lol, $user$ was **finally** $type$. Saw that one coming a mile away.',
+  'Whoa, $user$ was $type$! I wonder what they did???',
+  'Get $type$, sucker!!!!!!',
+  '$user$ just got **rekt** fam',
+  '**LOL SCRUB**'
+]
 const prefix = "s+";
 var bw = {};
 fs.readFile('./bot/bw.json', 'utf-8', function(errrr, data) {
@@ -145,7 +242,15 @@ var commands = [
             message.channel.send('testing lol')
         }
     },
-    
+
+    {
+      name: 'ban',
+      nsfw: false,
+      func: (message, args) => {
+        message.guild.ban(args[0])
+      }
+    },
+
     // Word Filter Commands
     {
         name: 'bannedwords',
@@ -172,7 +277,7 @@ var commands = [
                 }else{
                     data[message.guild.id] = [];
                     fs.writeFile('./bot/bw.json', JSON.stringify(data), 'utf-8', function(){
-                        console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                        log(2)
                         var emb = embed(message.author);
                         emb.setTitle('Banned Words')
                         emb.setDescription('There are no banned words for this server.')
@@ -212,7 +317,7 @@ var commands = [
                         message.channel.send('```' + e + '```')
                     })
                 fs.writeFile('./bot/bw.json', JSON.stringify(data), 'utf-8', function(){
-                    console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                    log(2)
                     bw = data;
                 })
             });
@@ -263,14 +368,14 @@ var commands = [
                             message.channel.send('```' + e + '```')
                         })
                     fs.writeFile('./bot/bw.json', JSON.stringify(data), 'utf-8', function(){
-                        console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                        log(2)
                         bw = data;
                     })
                 }
             });
         }
     },
-    
+
     //Life Bot Commands
     {
         name: 'game',
@@ -333,7 +438,7 @@ var commands = [
                         location: cities[Math.floor(Math.random()*cities.length)]
                     })
                     fs.writeFile('./bot/ranks.json', JSON.stringify(data), 'utf-8', function(){
-                        console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                        log(2)
                     })
                 }
                 message.channel.send({embed: emb})
@@ -370,7 +475,7 @@ var commands = [
                     if(personalData !== null){
                         data.characters[i].character[args[0]] = args[1][0].toUpperCase() + (args[0] === 'aboutMe' ? args[1].substr(1, 250) : args[1].substr(1, 30));
                         fs.writeFile('./bot/ranks.json', JSON.stringify(data), 'utf-8', function(){
-                            console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                            log(2)
                             var errorEmbed = embed(message.author);
                             errorEmbed.setTitle('Memory Written.');
                             errorEmbed.setDescription('Your character has been changed!');
@@ -384,7 +489,7 @@ var commands = [
                         errorEmbed.addField('Valid Keys', keys.join(", "))
                         errorEmbed.setColor("#ff0000");
                         message.channel.send({embed: errorEmbed});
-                        console.log('Bot Status: ' + 'Invalid Character Error'.red);
+                        log(3, 'Invalid Character')
                     }
                 })
             }else{
@@ -394,7 +499,7 @@ var commands = [
                 errorEmbed.addField('Valid Keys', keys.join(", "))
                 errorEmbed.setColor("#ff0000");
                 message.channel.send({embed: errorEmbed});
-                console.log('Bot Status: ' + 'Invalid Key Error'.red);
+                log(3, 'Invalid Key')
             }
         }
     },
@@ -448,7 +553,7 @@ var commands = [
                                                 }
                                                 data.jobs.splice(data.jobs.indexOf(smallSelection[job]), 1);
                                                 fs.writeFile('./bot/ranks.json', JSON.stringify(data), 'utf-8', function(){
-                                                    console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                                                    log(2)
                                                     message.channel.send({embed: emb});
                                                 })
                                             }
@@ -489,7 +594,7 @@ var commands = [
                                             };
                                             inside();
                                         break;
-                                        default: 
+                                        default:
                                             var errorEmbed = embed(message.author);
                                             errorEmbed.setTitle('Exited Menu');
                                             errorEmbed.setColor("#ff0000");
@@ -503,7 +608,7 @@ var commands = [
                     errorEmbed.setDescription('You don\'t have a character! Make one with s+game.');
                     errorEmbed.setColor("#ff0000");
                     message.channel.send({embed: errorEmbed});
-                    console.log('Bot Status: ' + 'Invalid Character Error'.red);
+                    log(3, 'Invalid Character')
                 }
             })
         }
@@ -553,7 +658,7 @@ var commands = [
                                                 data.flights.splice(data.flights.indexOf(smallSelection[flight]), 1);
                                                 data.characters[data.characters.indexOf(personalData)].location = smallSelection[flight].to;
                                                 fs.writeFile('./bot/ranks.json', JSON.stringify(data), 'utf-8', function(){
-                                                    console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                                                    log(2)
                                                     message.channel.send({embed: emb});
                                                 })
                                             }
@@ -594,7 +699,7 @@ var commands = [
                                             };
                                             inside();
                                         break;
-                                        default: 
+                                        default:
                                             var errorEmbed = embed(message.author);
                                             errorEmbed.setTitle('Exited Menu');
                                             errorEmbed.setColor("#ff0000");
@@ -608,7 +713,7 @@ var commands = [
                     errorEmbed.setDescription('You don\'t have a character! Make one with s+game.');
                     errorEmbed.setColor("#ff0000");
                     message.channel.send({embed: errorEmbed});
-                    console.log('Bot Status: ' + 'Invalid Character Error'.red);
+                    log(3, 'Invalid Character')
                 }
             })
         }
@@ -628,10 +733,10 @@ var commands = [
                     }
                 }
                 if(personalData !== null){
-                    
+
         }
     }*/
-    
+
 ];
 
 commands.push({
@@ -645,7 +750,7 @@ commands.push({
             }
         }
         str = str.substr(0, str.length-1);
-        
+
         var help = embed(message.author);
         help.setTitle('Command List');
         help.setDescription(str);
@@ -655,10 +760,12 @@ commands.push({
 })
 //main
 Scott.on('message', (message) => {
+    messageCounter++;
+    app.setBadgeCount(messageCounter)
     if(!message.author.bot){
-        
+
         var removingBadWord = false;
-        
+
         // commands
         for(var i = 0; i < commands.length; i++){
             var cap = prefix + commands[i].name + ' ';
@@ -673,7 +780,7 @@ Scott.on('message', (message) => {
                     }
                 }
                 if(!commands[i].needsperms || hasPermissions === commands[i].needsperms.length){
-                    console.log('Bot Status: ' + 'Received Command'.cyan);
+                    log(1)
                     var args = message.content.substr(cap.length, message.content.length - cap.length).split(",");
                     for(var j = 0; j < args.length; j++){
                         args[j] = args[j].trim();
@@ -685,18 +792,18 @@ Scott.on('message', (message) => {
                         if(message.channel.nsfw){
                             commands[i].func(message, args);
                             if(commands[i].name === 'removebannedwords') removingBadWord = true;
-                            console.log('Bot Status: ' + 'NSFW Command Run'.yellow);
+                            log(4)
                         }else{
                             var errorEmbed = embed(message.author);
                             errorEmbed.setTitle('NSFW-Only Command');
                             errorEmbed.setDescription('This command is only allowed in NSFW channels. Please do not use NSFW commands in public channels.');
                             errorEmbed.setColor("#ff0000");
                             message.channel.send({embed: errorEmbed});
-                            console.log('Bot Status: ' + 'NSFW Error'.red);
+                            log(3, 'NSFW')
                         }
                     }else{
                         commands[i].func(message, args);
-                        console.log('Bot Status: ' + 'Command Run'.yellow);
+                        log(5)
                     }
                 }else{
                     var errorEmbed = embed(message.author);
@@ -704,19 +811,19 @@ Scott.on('message', (message) => {
                     errorEmbed.setDescription('You need more permissions to run this command.');
                     errorEmbed.setColor("#ff0000");
                     message.channel.send({embed: errorEmbed});
-                    console.log('Bot Status: ' + 'Permissions Error'.red);
+                    log(3, 'Permissions')
                 }
                 break;
             }
         }
-        
+
         // censorship
         if(bw[message.guild.id] && !removingBadWord){
             var ts = ' ' + message.content.toLowerCase() + ' ';
             ts = ts.replace(/\W/gim, ' ');
             for(var i = 0; i < bw[message.guild.id].length; i++){
                 if(ts.includes(' ' + bw[message.guild.id][i] + ' ')){
-                    console.log('Bot Status: ' + 'Banned Word Censored!'.bgBlack.red)
+                    log(6)
                     message.reply(badWordResponses[Math.floor(Math.random()*badWordResponses.length)])
                         .then((sentMessage) => {
                             sentMessage.delete(3000);
@@ -726,31 +833,83 @@ Scott.on('message', (message) => {
                 }
             }
         }
-        
+
         message.channel.stopTyping(true);
     }
 });
+//electron applications
+ipc.on('statistics-send', (event, arg) => {
+  if(Scott.guilds === undefined || Scott.guilds.array().length > 0){
+    event.sender.send('statistics-response', JSON.stringify({
+      guilds: Scott.guilds.array().length,
+      users: Scott.users.array().length,
+      uptimestart: new Date()
+    }))
+    var userList = Scott.users.array();
+    var strUserList = [];
+    for(var i = 0; i < userList.length; i++){
+      strUserList.push({
+        username: userList[i].username,
+        id: userList[i].id,
+        discriminator: userList[i].discriminator
+      })
+    }
+    var guildList = Scott.guilds.array();
+    var strGuildList = [];
+    for(var i = 0; i < guildList.length; i++){
+      strGuildList.push({
+        name: guildList[i].name,
+        id: guildList[i].id
+      })
+    }
+    event.sender.send('client-users-stringified', JSON.stringify(strUserList))
+    event.sender.send('client-guilds-stringified', JSON.stringify(strGuildList))
+  }else{
+    event.sender.send('statistics-response', JSON.stringify({err: 'disconnected'}))
+  }
+})
+
+ipc.on('user-block', (event, arg) => {
+  const options = {
+    type: 'info',
+    title: 'User Block',
+    message: "Are you sure that you want to block this user? This will make them unable to interact with the bot.",
+    buttons: ['Yes', 'No', 'More info...']
+  }
+  dialog.showMessageBox(options, function (index) {
+    event.sender.send('user-block-selection', {id: arg.id, node: arg.node, type: arg.type, index: index})
+  })
+})
+
+ipc.on('user-block-confirmed', (event, id) => {
+  fs.readFile('./bot/backend.json', 'utf-8', function(err, data) {
+    data = JSON.parse(data)
+    data.blockedIDs.push(id);
+    fs.writeFile('./bot/backend.json', JSON.stringify(data))
+  })
+})
 
 Scott.on('ready', () => {
-    
+
     //bot stuff
-    console.log('Bot Status: ' + 'Ready'.green);
+    log('')
     Scott.user.setGame(games[Math.floor(Math.random()*games.length)]);
-    
+    Scott.user.setAvatar('bot/cool_and_good.png');
+
     //game of life stuff
     setInterval(function(){
         if(Math.random() < 0.1){
             fs.readFile('./bot/ranks.json', 'utf-8', function(err, data) {
                 data = JSON.parse(data);
-                var newJob = {  
-                    city: cities[Math.floor(Math.random()*cities.length)], 
-                    desc: jobDescs[Math.floor(Math.random()*jobDescs.length)], 
+                var newJob = {
+                    city: cities[Math.floor(Math.random()*cities.length)],
+                    desc: jobDescs[Math.floor(Math.random()*jobDescs.length)],
                     salary: Math.round(Math.random()*30 + 3)
                 };
                 for(var j = 0; j < 5; j++){
                     var newFlight = {
-                        from: cities[Math.floor(Math.random()*cities.length)], 
-                        to: cities[Math.floor(Math.random()*cities.length)], 
+                        from: cities[Math.floor(Math.random()*cities.length)],
+                        to: cities[Math.floor(Math.random()*cities.length)],
                         airline: airlines[Math.floor(Math.random()*airlines.length)],
                         price: Math.round(Math.random()*10 + 3),
                         dist: null
@@ -763,12 +922,9 @@ Scott.on('ready', () => {
                 }
                 data.jobs.push(newJob);
                 fs.writeFile('./bot/ranks.json', JSON.stringify(data), 'utf-8', function(){
-                    console.log('Bot Status: ' + 'Wrote to File'.magenta);
+                    log(2)
                 });
             })
         }
     }, 5000)
 });
-
-//setup
-Scott.login('MzQxNDA3Mjg0MzY4NTA2ODgy.DGApww.49AVIQj-EdzCbC8Ulqh0u6-Fcrk');

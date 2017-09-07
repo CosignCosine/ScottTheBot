@@ -1,0 +1,9 @@
+{
+  "name": "electron-quick-start",
+  "version": "1.7.0",
+  "description": "A minimal Electron application",
+  "main": "bot/main.js",
+  "scripts": {
+    "start": "electron ."
+  }
+}
