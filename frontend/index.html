@@ -84,7 +84,8 @@
         height: 150px;
         overflow-x: hidden;
         overflow-y: auto;
-        font-family: monospace;
+        font-family: "Overpass Mono";
+        font-size: 0.8em;
       }
       #users-inner .user, #guilds-inner .guild{
         padding: 5px;
@@ -144,11 +145,11 @@
     <br>
     <div id='log' class='block'>
       <div class='block-title'><i class="fa fa-info"></i> Log</div>
-      <div id='log-inner'>
-        <div class="log" style="color: green">App Ready</div>
-        <div class="log">ScottTheBot</div>
-        <div class="log">Base Code by Scott#4276</div>
-        <div class="log" style="color: red">Please don't change the credit as I spent a long time on this code!</div>
+      <div id='log-inner' class='color-ignore'>
+        <div class="log color-ignore" style="color: green">App Ready</div>
+        <div class="log color-ignore">ScottTheBot</div>
+        <div class="log color-ignore">Base Code by Scott#4276</div>
+        <div class="log color-ignore" style="color: red">Please don't change the credit as I spent a long time on this code!</div>
       </div>
     </div>
     <div id='stats' class='block'>
@@ -170,10 +171,15 @@
     </div>
     <div id='console' class='block'>
       <div class='block-title'><i class="fa fa-code"></i> Console</div>
-      <input id='eval'> <button onclick="evalExpression()">Run</button>
+      <input id='eval'> <button onclick="evalExpression()" class="color-ignore">Run</button>
+      <br>
+      <select id="renderer-main">
+        <option value="main">Main</option>
+        <option value="renderer" selected>Renderer</option>
+      </select>
       <br><br>
       <div class='block-title'><i class="fa fa-user"></i> User Lookup</div>
-      <input id='user-lookup'> <button onclick="lookupUser()">Search</button>
+      <input id='user-lookup'> <button onclick="lookupUser()" class="color-ignore">Search</button>
     </div>
     <div class="block">
       <div class='block-title'><i class="fa fa-wrench"></i> App Settings</div>
@@ -182,7 +188,14 @@
         <option value="1">Original</option>
         <option value="2">Dark</option>
         <option value="3">Light</option>
+        <option value="4">Sky</option>
+        <option value="5">Fall Embers</option>
+        <option value="6">Pastels</option>
+        <option value="7" disabled>Lemons and Grapes</option>
+        <option value="8">Oceans</option>
       </select>
+      <div id="token-choose"><button type="button" onclick="tokenSelect()" class="color-ignore">Set Token</button> <input type="password" id="token" class="color-ignore"></div>
+
     </div>
     <div id="scott-version">
       ScottTheBot v2(alpha)
@@ -209,7 +222,10 @@
         console.log(identification_code)
         ipcRenderer.send('user-block', {id: identification_code, node, type: node.innerHTML});
       }
-
+      function tokenSelect(node){
+        localStorage.token = $("#token").val();
+        $("#token").val('');
+      }
       ipcRenderer.on('user-block-selection', function (event, index) {
         if (index.index === 0){
 
@@ -250,7 +266,7 @@
           userDiv.html(`<div class="user-inner">
             <span class="user-name">${user.username}</span><span class="user-discrim">#${user.discriminator}</span>
             <span class="user-id">${user.id}</span>
-            <span class="user-block"><a class="block-dat-boi-lol" onclick="blockUser(this)">(block)</a></span>
+            <span class="user-block color-ignore"><a class="block-dat-boi-lol color-ignore" onclick="blockUser(this)">(block)</a></span>
           </div>`)
           usersDiv.append(userDiv)
         }
@@ -266,7 +282,7 @@
           guildDiv.html(`<div class="guild-inner">
             <span class="guild-name">${guild.name}</span>
             <span class="guild-id">${guild.id}</span>
-            <span class="guild-leave"><a class="leave-dat-boi-lol" onclick="leaveGuild(this)">(leave)</a></span>
+            <span class="guild-leave color-ignore"><a class="leave-dat-boi-lol color-ignore" onclick="leaveGuild(this)">(leave)</a></span>
           </div>`)
           guildsDiv.append(guildDiv)
         }
@@ -320,11 +336,16 @@
           case 6: code = 'Censored Word'; color = '#f00000'; break;
           default: code = 'Bot Ready'; color = '#555'; break;
         }
-        $("<div>").addClass('log').html(code).css('color', color).appendTo(logDiv)
+        $("<div>").addClass('log').addClass('color-ignore').html(code).css('color', color).appendTo(logDiv)
         $("#log-inner").animate({ scrollTop: $('#log-inner').prop("scrollHeight")}, 1000);
       })
     </script>
     <script name="internal">
+    if(localStorage.token){
+      console.log(localStorage.token)
+    }else{
+      localStorage.token = "Welcome to hell"
+    }
       $("#theme").change(() => {
         var val = $("#theme").val();
         console.log(val, 'hi')
@@ -332,6 +353,7 @@
           case 1: {
           } break;
           case 2: {
+            $("*:not(.color-ignore)").css('color', 'white')
             $("#title-block").css('background', '#444444')
             $("#some-other-block").css('background', '#222222')
             $("#title-block").css('border-bottom', '10px solid #000')
@@ -344,7 +366,7 @@
             $(".guild:nth-child(even)").css('background', '#222')
           } break;
           case 3: {
-            $("*:not(.log)").css('color', 'black')
+            $("*:not(.color-ignore)").css('color', 'black')
             $("#title-block").css('background', '#cbcbcb')
             $("#some-other-block").css('background', '#bdbdbd')
             $("#title-block").css('border-bottom', '10px solid #000')
@@ -355,6 +377,80 @@
             $(".user:nth-child(even)").css('background', '#c6c6c6')
             $(".guild:nth-child(odd)").css('background', '#d5d5d5')
             $(".guild:nth-child(even)").css('background', '#c6c6c6')
+          } break;
+          case 4: {
+            $("*:not(.color-ignore)").css('color', 'white')
+            $("#title-block").css('background', '#a8e8f4')
+            $("#some-other-block").css('background', '#6ee1f6')
+            $("#title-block").css('border-bottom', '10px solid #52e4ff')
+            $("#some-other-block").css('border-bottom', '10px solid #52e4ff')
+            $("body").css('background', '#c2eff7')
+            $(".block").css('background', '#81e4f6')
+            $(".user:nth-child(odd)").css('background', '#c2eff7')
+            $(".user:nth-child(even)").css('background', '#a1f1ff')
+            $(".guild:nth-child(odd)").css('background', '#c2eff7')
+            $(".guild:nth-child(even)").css('background', '#a1f1ff')
+          } break;
+          case 5: {
+            $("*:not(.color-ignore)").css('color', '#251500')
+            $("#title-block").css('background', '#D4A86A')
+            $("#some-other-block").css('background', '#FFDBAA')
+            $("#title-block").css('border-bottom', '10px solid #AA7A39')
+            $("#some-other-block").css('border-bottom', '10px solid #D4A86A')
+            $("body").css('background', '#805315')
+            $(".block").css('background', '#AA7A39')
+            $(".user:nth-child(odd)").css('background', '#FFDBAA')
+            $(".user:nth-child(even)").css('background', '#D4A86A')
+            $(".guild:nth-child(odd)").css('background', '#FFDBAA')
+            $(".guild:nth-child(even)").css('background', '#D4A86A')
+          } break;
+          case 6: {
+            $("*:not(.color-ignore)").css('color', 'black')
+            $("#title-block").css('background', '#ffa4a4')
+            $("#some-other-block").css('background', '#a4c9ff')
+            $("#title-block").css('border-bottom', '10px solid #fffba4')
+            $("#some-other-block").css('border-bottom', '10px solid #a4ffb0')
+            $("body").css('background', '#dedede')
+            $(".block").each(function(node){
+              var pColors = [
+                '#ffa4a4',
+                '#ffcda4',
+                '#fffba4',
+                '#a4ffb0',
+                '#a4c9ff'
+              ];
+              $(this).css('background', pColors[Math.floor(Math.random()*pColors.length)])
+            })
+            $(".user:nth-child(odd)").css('background', '#dedede')
+            $(".user:nth-child(even)").css('background', '#f1f1f1')
+            $(".guild:nth-child(odd)").css('background', '#dedede')
+            $(".guild:nth-child(even)").css('background', '#f1f1f1')
+          } break;
+          case 7: {
+            $("*:not(.color-ignore)").css('color', 'black')
+            $("#title-block").css('color', 'white')
+            $("#some-other-block i").css('color', 'white')
+            $("#title-block").css('background', '#241858')
+            $("#some-other-block").css('background', '#3E3175')
+            $("#title-block").css('border-bottom', '10px solid #AA9539')
+            $("#some-other-block").css('border-bottom', '10px solid #D4C16A')
+            $("body").css('background', '#552B72')
+            $(".block").css('background', 'lemonchiffon')
+            $(".user:nth-child(odd)").css('background', '#FFFDAA')
+            $(".user:nth-child(even)").css('background', '#D4D26A')
+            $(".guild:nth-child(odd)").css('background', '#FFFDAA')
+            $(".guild:nth-child(even)").css('background', '#D4D26A')
+          } break;
+          case 8: {
+            $("*:not(.color-ignore)").css('color', 'white')
+            $("#title-block").css('background', '#032137')
+            $("#some-other-block").css('background', '#123752')
+            $("#title-block").css('border-bottom', '10px solid #708EA4')
+            $("#some-other-block").css('border-bottom', '10px solid #708EA4')
+            $("body").css('background', '#29516D')
+            $(".block").css('background', '#123752')
+            $(".user").css('background', '#29516D')
+            $(".guild").css('background', '#29516D')
           } break;
         }
       })
