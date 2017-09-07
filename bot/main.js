@@ -11,10 +11,12 @@ const fs         = require('fs');
 const {app, BrowserWindow, dialog, Menu, MenuItem, ipcMain} = require('electron');
 const path       = require('path');
 const url        = require('url');
+const {LocalStorage} = require('node-localstorage');
 
 // Variables
 var win,
 disconnected     = false,
+ls               = new LocalStorage('./scratch'),
 messageCounter   = 0,
 Scott            = new Discord.Client(),
 games            = [
@@ -719,14 +721,19 @@ commands.push({
 // Main
 try{
   // Events
-  Scott.login('MzQxNDA3Mjg0MzY4NTA2ODgy.DJBcRQ.nMB5RGHhthwxE_PiouAuMflJ57E')
-    .catch((e) => {
-      disconnected = true;
-      setInterval(function(){
-        win.webContents.send("disconnected", "disconnected")
-        clearInterval(this)
-      }, 5000)
-    })
+  var token = ls.getItem('token')
+  if(token){
+    Scott.login(token)
+      .catch((e) => {
+        disconnected = true;
+        setInterval(function(){
+          win.webContents.send("disconnected", "disconnected")
+          clearInterval(this)
+        }, 5000)
+      })
+  }else{
+    throw 'No token! Please set a token.';
+  }
   app.on('ready', ()=>{
     openWindow();
     ready = true;

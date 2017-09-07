@@ -207,6 +207,7 @@
       </div>
     </div>
     <script type="text/javascript">
+    var ls;
     const {ipcRenderer, dialog, shell, app} = require('electron');
 
     //versioning
@@ -223,8 +224,12 @@
         ipcRenderer.send('user-block', {id: identification_code, node, type: node.innerHTML});
       }
       function tokenSelect(node){
-        localStorage.token = $("#token").val();
-        $("#token").val('');
+        if($("#token").val().length == 0){
+          console.log('lol')
+        }else{
+          ls.setItem('token', $("#token").val());
+          $("#token").val('');
+        }
       }
       ipcRenderer.on('user-block-selection', function (event, index) {
         if (index.index === 0){
@@ -289,7 +294,6 @@
       })
 
       ipcRenderer.on('disconnected', (event, arg) => {
-        console.log('yes')
         $(".block").fadeOut();
         $(".fa").fadeOut();
         $("strong").fadeOut();
@@ -318,7 +322,6 @@
       * Custom error string if logging an error.
       */
       ipcRenderer.on('okay-no', (event, arg) => {
-        console.log('this happened lol')
         $("*").css("color", "pink")
       })
       ipcRenderer.on('log', (event, arg) => {
@@ -341,11 +344,8 @@
       })
     </script>
     <script name="internal">
-    if(localStorage.token){
-      console.log(localStorage.token)
-    }else{
-      localStorage.token = "Welcome to hell"
-    }
+    const {LocalStorage} = require('node-localstorage');
+    var ls = new LocalStorage('./scratch')
       $("#theme").change(() => {
         var val = $("#theme").val();
         console.log(val, 'hi')
