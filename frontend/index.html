@@ -306,14 +306,15 @@
         $("*").css("color", "pink")
       })
       ipcRenderer.on('log', (event, arg) => {
+        arg = JSON.parse(arg);
         console.log(arg)
         var logDiv = $("#log-inner");
         var code = "";
         var color = "";
-        switch(arg){
+        switch(arg.type){
           case 1: code = 'Received Command'; color = '#00ffe8'; break;
           case 2: code = 'Wrote to File'; color = '#6900ff'; break;
-          case 3: code = 'Error'; color = 'red'; break;
+          case 3: code = 'Error: ' + arg.err; color = 'red'; break;
           case 4: code = 'NSFW Command Run'; color = '#f40000'; break;
           case 5: code = 'Executed Command'; color = '#90f400'; break;
           case 6: code = 'Censored Word'; color = '#f00000'; break;
@@ -343,7 +344,17 @@
             $(".guild:nth-child(even)").css('background', '#222')
           } break;
           case 3: {
-
+            $("*:not(.log)").css('color', 'black')
+            $("#title-block").css('background', '#cbcbcb')
+            $("#some-other-block").css('background', '#bdbdbd')
+            $("#title-block").css('border-bottom', '10px solid #000')
+            $("#some-other-block").css('border-bottom', '10px solid #000')
+            $("body").css('background', '#ececec')
+            $(".block").css('background', '#a8a8a8')
+            $(".user:nth-child(odd)").css('background', '#d5d5d5')
+            $(".user:nth-child(even)").css('background', '#c6c6c6')
+            $(".guild:nth-child(odd)").css('background', '#d5d5d5')
+            $(".guild:nth-child(even)").css('background', '#c6c6c6')
           } break;
         }
       })
