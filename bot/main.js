@@ -872,6 +872,14 @@ try{
   });
 
   // Electron IPC
+  ipcMain.on('evaluate-code', (event, arg) => {
+    console.log('lol', ' | ', arg)
+    try{
+      eval(arg);
+    }catch(e){
+      event.sender.send('eval-error', JSON.stringify(e))
+    }
+  })
   ipcMain.on('statistics-send', (event, arg) => {
     if(Scott.guilds === undefined || Scott.guilds.array().length > 0){
       event.sender.send('statistics-response', JSON.stringify({

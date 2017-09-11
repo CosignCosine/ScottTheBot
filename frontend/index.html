@@ -87,6 +87,9 @@
         font-family: "Overpass Mono";
         font-size: 0.8em;
       }
+      .log{
+        border-top: 1px solid black;
+      }
       #users-inner .user, #guilds-inner .guild{
         padding: 5px;
         font-family: quattrocento_sansregular, sans-serif;
@@ -193,10 +196,10 @@
         <option value="6">Pastels</option>
         <option value="7" disabled>Lemons and Grapes</option>
         <option value="8">Oceans</option>
-      </select>
+      </select><br><br>
       <div id="token-choose"><button type="button" onclick="tokenSelect()" class="color-ignore">Set Token</button> <input type="password" id="token" class="color-ignore"></div>
 
-    </div>
+    </div><br>
     <div id="scott-version">
       ScottTheBot v2(alpha)
     </div>
@@ -216,6 +219,29 @@
     $('#v8-version').html("<strong>V8 Version</strong> " + process.versions.v8)
     $('#chromium-version').html("<strong>Chromium Version</strong> " + process.versions.chrome)
 
+      function log(code, color){
+        var logDiv = $("#log-inner");
+        $("<div>").addClass('log').addClass('color-ignore').html(code).css('color', color).appendTo(logDiv)
+        $("#log-inner").animate({ scrollTop: $('#log-inner').prop("scrollHeight")}, 1000);
+      }
+      function evalExpression(){
+        var proc = $("#renderer-main").val();
+        var injec = $("#eval").val();
+        if(injec.length === 0){
+          console.log('no');
+        }else{
+          if(proc === 'renderer'){
+            try{
+              eval(injec)
+            }catch(e){
+              log('Syntax error on evaluated expression [renderer], check console for more nerd details.', 'red')
+              console.error(e);
+            }
+          }else{
+            ipcRenderer.send('evaluate-code', injec)
+          }
+        }
+      }
 
 
       function blockUser(node){
@@ -238,6 +264,9 @@
         }else if(index.index === 2){
           shell.openExternal('http://electron.atom.io')
         }
+      })
+      ipcRenderer.on('eval-error', function (event, arg){
+        log('Syntax error on evaluated expression [main], check console for more nerd details.', 'red');
       })
     </script>
     <script type="text/javascript">
@@ -339,8 +368,8 @@
           case 6: code = 'Censored Word'; color = '#f00000'; break;
           default: code = 'Bot Ready'; color = '#555'; break;
         }
-        $("<div>").addClass('log').addClass('color-ignore').html(code).css('color', color).appendTo(logDiv)
-        $("#log-inner").animate({ scrollTop: $('#log-inner').prop("scrollHeight")}, 1000);
+        log(code, color);
+
       })
     </script>
     <script name="internal">
@@ -453,6 +482,13 @@
             $(".guild").css('background', '#29516D')
           } break;
         }
+      })
+    </script>
+    <script>
+      var fs = require('fs');
+      fs.readFile('./package.json', 'utf-8', function(err, data){
+        data = JSON.parse(data)
+        $("#scott-version").html("<strong>ScottTheBot Version</strong> " + data.version)
       })
     </script>
   </body>
